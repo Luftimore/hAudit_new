@@ -138,7 +138,5 @@ export default [
         normpunkt: "10.3",
         kapitel: "Fortlaufende Verbesserung",
         inhalt: "Die Organisation muss die Eignung, Angemessenheit und Wirksamkeit ihres Qualitätsmanagementsystemsfortlaufend verbessern.\nDie Organisation muss die Ergebnisse von Analysen und Bewertungen sowie die Ergebnisse der Managementbewertung berücksichtigen, um zu bestimmen, ob es Erfordernisse oder Chancen gibt, die als Teil derfortlaufenden Verbesserung berücksichtigt werden müssen."
-    },
-    
-
+    }
 ]

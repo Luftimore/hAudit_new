@@ -65,8 +65,10 @@ app.whenReady().then(() => {
           console.log("Saved file.");
           event.reply('newAuditSaved', {success: true});
         } catch (err) {
-          console.log("Error saving file: " + err.message);
-          event.reply('newAuditSaved', {success: false, error: err.message});
+          if (err instanceof Error) {
+            console.log("Error saving file: " + err.message);
+            event.reply('newAuditSaved', {success: false, error: err.message});
+          }
         }
       }
     });
@@ -88,7 +90,9 @@ app.whenReady().then(() => {
         });
       }
     }).catch((err) => {
-      console.error('Error opening file dialog: ', err);
+      if (err instanceof Error) {
+        console.error('Error opening file dialog: ', err);
+      }
     });
   });
 

@@ -3,19 +3,19 @@
     "normpunkt": "4.1",
     "kapitel": "Verstehen der Organisation und ihres Kontextes",
     "inhalt": "Die Organisation muss externe und interne Themen bestimmen, die für ihren Zweck und ihre strategischeAusrichtung relevant sind und sich auf ihre Fähigkeit auswirken, die beabsichtigten Ergebnisse ihresQualitätsmanagementsystems zu erreichen.",
-    "verdict": null
+    "verdict": "+"
   },
   {
     "normpunkt": "4.2",
     "kapitel": "Verstehen der Erfordernisse und Erwartungen interessierter Parteien",
     "inhalt": "Aufgrund ihrer Auswirkung bzw. ihrer potentiellen Auswirkung auf die Fähigkeit der Organisation zurbeständigen Bereitstellung von Produkten und Dienstleistungen, die die Anforderungen der Kunden und diezutreffenden gesetzlichen und behördlichen Anforderungen erfüllen, muss die Organisation\na) die interessierten Parteien, die für ihr Qualitätsmanagementsystem relevant sind,\nb) die für ihr Qualitätsmanagementsystem relevanten Anforderungen dieser interessierten Parteien bestimmen.\nDie Organisation muss Informationen über diese interessierten Parteien und deren relevanten\nAnforderungen überwachen und überprüfen.",
-    "verdict": null
+    "verdict": "~"
   },
   {
     "normpunkt": "4.3",
     "kapitel": "Festlegen des Anwendungsbereichs des Qualitätsmanagementsystems",
     "inhalt": "Die Organisation muss die Grenzen und die Anwendbarkeit ihres Qualitätsmanagementsystems bestimmen,um dessen Anwendungsbereich festzulegen.\nBei der Festlegung dieses Anwendungsbereichs muss die Organisation\na) die unter 4.1 genannten externen und internen Themen,\nb) die unter 4.2 genannten Anforderungen der relevanten interessierten Parteien,\nc) die Produkte und Dienstleistungen der Organisation\nberücksichtigen.\nDie Organisation muss sämtliche Anforderungen dieser Internationalen Norm anwenden, wenn sie innerhalb des festgelegten Anwendungsbereichs ihres Qualitätsmanagementsystems anwendbar sind.\nDer Anwendungsbereich des Qualitätsmanagementsystems der Organisation muss als dokumentierte Information verfügbar sein und aufrechterhalten werden. Der Anwendungsbereich muss die Arten der behandelten Produkte und Dienstleistungen angeben, und eine Begründung für jede Anforderung dieserInternationalen Norm liefern, die von der Organisation als nicht zutreffend hinsichtlich des Anwendungsbereiches ihres Qualitätsmanagementsystems bestimmt wird.\nDie Konformität mit dieser Internationalen Norm darf nur dann beansprucht werden, wenn die Anforderungen, die als nicht zutreffend bestimmt wurden, nicht die Fähigkeit oder die Verantwortung derOrganisation beeinträchtigen, die Konformität ihrer Produkte und Dienstleistungen sowie die Erhöhung der Kundenzufriedenheit sicherzustellen.",
-    "verdict": "~"
+    "verdict": null
   },
   {
     "normpunkt": "4.4",

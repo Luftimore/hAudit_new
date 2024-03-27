@@ -179,10 +179,18 @@ export default createStore({
   },
   mutations: {
     setIso9001NormpointVerdict(state, payload) {
-        state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt).verdict = payload.verdict;
+        const lookup = state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt);
+        
+        if (lookup !== undefined) {
+            lookup.verdict = payload.verdict;
+        }
     },
     clearIso9001NormpointVerdict(state, payload) {
-        state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt).verdict = null;
+        const lookup = state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt)
+        
+        if (lookup !== undefined) {
+            lookup.verdict = null;
+        }
     },
     clearAllIso9001NormpointVerdicts(state) {
         state.auditData.iso9001data.normpoints.filter(entry => entry.verdict != null).forEach((entry) => {

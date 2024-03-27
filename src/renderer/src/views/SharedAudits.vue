@@ -6,7 +6,6 @@
 </template>
 
 <script lang="ts">
-    import CreateAudit from '../components/CreateAudit.vue'
     import Button from "primevue/button";
 
     export default {

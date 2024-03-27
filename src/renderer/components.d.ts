@@ -7,7 +7,6 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    AuditDetails: typeof import('./src/components/AuditDetails.vue')['default']
     Button: typeof import('primevue/button')['default']
     Column: typeof import('primevue/column')['default']
     CreateAudit: typeof import('./src/components/CreateAudit.vue')['default']

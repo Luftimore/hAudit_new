@@ -1,4 +1,4 @@
-import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router';
+import {createRouter, createWebHashHistory} from 'vue-router';
 
 import MainMenu from '../views/MainMenu.vue';
 import NewAudit from '../views/NewAudit.vue';

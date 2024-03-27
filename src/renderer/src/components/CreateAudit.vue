@@ -13,7 +13,7 @@
                 </div>
             </div>
             <ul class="pt-1">
-                <li class="pt-1" v-for="(point, pointIndex) in norm.points" :key="pointIndex">
+                <li class="pt-1" v-for="(pointIndex) in norm.points">
                 <NormpointSelection @remove-entry="removeNormPoint(normIndex, pointIndex)"></NormpointSelection>
                 </li>
             </ul>
@@ -35,17 +35,16 @@
 </template>
   
   
-<script>
+<script lang="ts">
   // import { ipcRenderer } from 'electron';
   import NormpointSelection from "./NormpointSelection.vue";
   import NormSelection from "./NormSelection.vue";
-  import Dropdown from "primevue/dropdown";
   import Button from "primevue/button";
 
   export default {
     data() {
       return {
-        norms: JSON.parse(localStorage.getItem('norms')) || [],
+        norms: [{ name: '', selectedValue: '', points: [ { name: '', selectedValue: ''} ] }],
         selectionOptions: ['+', '-', '~', '/']
       };
     },
@@ -82,10 +81,7 @@
         //   console.log(result);
         // });
 
-        window.electron.ipcRenderer.send('saveNewAudit', JSON.stringify(this.$store.getters.getAllIso9001Normpoints, null, 2))
-        .then((result) => {
-            this.savingIndicator = false;
-        });
+        window.electron.ipcRenderer.send('saveNewAudit', JSON.stringify(this.$store.getters.getAllIso9001Normpoints, null, 2));
       }
     }
   };

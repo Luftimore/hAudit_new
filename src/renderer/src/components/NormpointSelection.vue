@@ -10,7 +10,7 @@
                     <Dropdown v-model="selectedNormpoint" filter :options="normpoints" optionLabel="kapitel" placeholder="Normpunkt auswählen" />
                 </div>
                 <div class="flex align-items-center pl-1">
-                    <Dropdown v-model="selectedVerdict" :options="selectionOptions" :value="option"/>
+                    <Dropdown v-model="selectedVerdict" :options="selectionOptions"/>
                 </div>
             </div>
         </div>
@@ -26,7 +26,6 @@
 <script lang="ts">
     import Dropdown from "primevue/dropdown";
     import TextArea from "primevue/textarea"
-    import iso9001data from "../data/iso9001.ts"
 
     export default {
         mounted() {
@@ -40,7 +39,12 @@
         },
         data() {
             return {
-                selectedNormpoint: null,
+                selectedNormpoint: {
+                    normpunkt: "",
+                    kapitel: "",
+                    inhalt: "",
+                    verdict: null
+                },
                 selectedVerdict: null,
                 content: "Norminhalt...",
                 normpoints: [],
@@ -64,14 +68,12 @@
             },
             selectedVerdict: {
                 handler(newValue) {
-                    if (newValue === 'leer') {
+                    if (newValue === 'leer' && this.selectedNormpoint) {
                         this.$store.commit('clearIso9001NormpointVerdict', this.selectedNormpoint);
-                    } else {
+                    } else if (this.selectedNormpoint) {
                         this.selectedNormpoint.verdict = newValue;
                         this.$store.commit('setIso9001NormpointVerdict', this.selectedNormpoint);
                     }
-
-                    console.log(this.$store.getters.getIso9001NormpointById(this.selectedNormpoint.normpunkt))
                 }
             }
         }
