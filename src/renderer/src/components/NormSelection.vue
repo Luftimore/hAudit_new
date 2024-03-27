@@ -16,8 +16,7 @@
             return {
                 selectedNorm: null,
                 norms: [
-                    { norm: "Norm 1" },
-                    { norm: "Norm 2" }
+                    { norm: "ISO9001" }
                 ]
             }
         }

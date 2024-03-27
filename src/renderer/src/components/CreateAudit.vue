@@ -4,14 +4,6 @@
         
         <h2>Normen und Normpunkte</h2>
         <div v-for="(norm, normIndex) in norms" :key="normIndex" class="pt-1">
-            <!-- <input type="text" v-model="norm.name" placeholder="Norm eingeben"> -->
-            <!-- <NormpointSelection></NormpointSelection> -->
-            <!-- <select v-model="norm.selectedValue">
-              <option v-for="option in selectionOptions" :key="option" :value="option">{{ option }}</option>
-            </select> -->
-            <!-- <Dropdown v-model="norm.selectedValue" :options="selectionOptions" :value="option"></Dropdown> -->
-            
-            <!-- <button class="btn btn-primary button-item" @click="addNormPoint(normIndex)">Normpunkt hinzufügen</button> -->
             <div class="flex flex-wrap">
                 <div class="flex align-items-center justify-content-center">
                     <NormSelection></NormSelection>
@@ -22,27 +14,12 @@
             </div>
             <ul class="pt-1">
                 <li class="pt-1" v-for="(point, pointIndex) in norm.points" :key="pointIndex">
-                <!-- <input type="text" v-model="point.name" placeholder="Normpunkt eingeben"> -->
-                <div class="flex flex-wrap">
-                    <div class="flex align-items-center justify-content-center">
-                        <NormpointSelection></NormpointSelection>
-                    </div>
-                    <div class="flex align-items-center justify-content-center pl-1">
-                        <Dropdown v-model="point.value" :options="selectionOptions" :value="option"/>
-                    </div>
-                    <div class="flex align-items-center justify-content-center pl-1">
-                        <Button label="Entfernen" severity="danger" @click="removeNormPoint(normIndex, pointIndex)"/>
-                    </div>
-                </div>
-                <!-- <select v-model="point.value">
-                  <option v-for="option in selectionOptions" :key="option" :value="option">{{ option }}</option>
-                </select> -->
-                <!-- <button class="btn btn-secondary button-item" @click="removeNormPoint(normIndex, pointIndex)">Entfernen</button> -->
+                <NormpointSelection @remove-entry="removeNormPoint(normIndex, pointIndex)"></NormpointSelection>
                 </li>
             </ul>
             <!-- <button class="btn btn-secondary button-item" @click="removeNorm(normIndex)">Norm entfernen</button> -->
             <div class="pt-1">
-            <Button label="Norm entfernen" severity="danger" @click="removeNorm(normIndex)"/>
+                <Button label="Norm entfernen" severity="danger" @click="removeNorm(normIndex)"/>
             </div>
         </div>
         <div class="pt-1">
@@ -72,6 +49,9 @@
         selectionOptions: ['+', '-', '~', '/']
       };
     },
+    setup() {
+        
+    },
     watch: {
       norms: {
         handler(newValue) {
@@ -85,6 +65,7 @@
       },
       removeNorm(normIndex) {
         this.norms.splice(normIndex, 1);
+        this.$store.commit('clearAllIso9001NormpointVerdicts');
       },
       addNormPoint(normIndex) {
         this.norms[normIndex].points.push({ name: '', selectedValue: ''});
@@ -100,8 +81,11 @@
         // .then(result => {
         //   console.log(result);
         // });
-        
-        window.electron.ipcRenderer.send('saveNewAudit', JSON.stringify(this.norms, null, 2));
+
+        window.electron.ipcRenderer.send('saveNewAudit', JSON.stringify(this.$store.getters.getAllIso9001Normpoints, null, 2))
+        .then((result) => {
+            this.savingIndicator = false;
+        });
       }
     }
   };
