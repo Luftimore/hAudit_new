@@ -3,7 +3,11 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+import * as openpgp from 'openpgp';
+
 const fs = require('fs');
+
+var privatePGPKey, publicPGPKey;
 
 function createWindow(): void {
   // Create the browser window.
@@ -95,6 +99,86 @@ app.whenReady().then(() => {
       }
     });
   });
+
+  // Make sure that file does not exist before generating encryption key
+  if (!fs.existsSync(app.getPath("userData") + "/pgp_keys")) {
+    try {
+      fs.mkdir(app.getPath("userData") + "/pgp_keys", (err) => err && console.log(err));
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Error creating directory pgp_keys: " + err.message);
+      }
+    }
+    
+
+    // Generate new PGP keypair if it doesn't exist
+    // Source: https://github.com/openpgpjs/openpgpjs/blob/main/README.md#getting-started
+    // ------
+    (async () => {
+      const { privateKey, publicKey } = await openpgp.generateKey({
+          type: 'rsa', // Type of the key
+          rsaBits: 4096, // RSA key size (defaults to 4096 bits)
+          userIDs: [{ name: 'Test', email: 'test@testing.com' }], // you can pass multiple user IDs
+          passphrase: 'testing' // protects the private key
+      });
+
+      privatePGPKey = privateKey;
+      publicPGPKey = publicKey;
+
+      // Save private key to disk
+      try {
+        fs.writeFileSync(app.getPath("userData") + "/pgp_keys/pgp_key.json", JSON.stringify(privateKey), 'utf-8');
+        console.log("Saved new private key to: " + app.getPath("userData") + "/pgp_keys/pgp_key");
+      } catch (err) {
+        if (err instanceof Error) {
+          console.log("Error saving private key: " + err.message);
+        }
+      }
+
+      // Save public key to disk
+      try {
+        fs.writeFileSync(app.getPath("userData") + "/pgp_keys/pgp_key.pub.json", JSON.stringify(publicKey), 'utf-8');
+        console.log("Saved new public key to: " + app.getPath("userData") + "/pgp_keys/pgp_key.pub");
+      } catch (err) {
+        if (err instanceof Error) {
+          console.log("Error saving public key: " + err.message);
+        }
+      }
+    })();
+    // ------
+  } else {
+    // Read private key
+    try {
+      fs.readFile(app.getPath("userData") + "/pgp_keys/pgp_key.json", 'utf-8', (err, data) => {
+        if (err) {
+          console.error('Error reading file: ', err);
+          return;
+        }
+
+        privatePGPKey = JSON.parse(data);
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Error reading private key: " + err.message);
+      }
+    }
+
+    // Read public key
+    try {
+      fs.readFile(app.getPath("userData") + "/pgp_keys/pgp_key.pub.json", 'utf-8', (err, data) => {
+        if (err) {
+          console.error('Error reading file: ', err);
+          return;
+        }
+
+        publicPGPKey = JSON.parse(data);
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Error reading public key: " + err.message);
+      }
+    }
+  }
 
   createWindow()
 
