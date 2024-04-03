@@ -11,11 +11,11 @@ declare module 'vue' {
     Column: typeof import('primevue/column')['default']
     CreateAudit: typeof import('./src/components/CreateAudit.vue')['default']
     DataTable: typeof import('primevue/datatable')['default']
+    Dialog: typeof import('primevue/dialog')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
     NormpointSelection: typeof import('./src/components/NormpointSelection.vue')['default']
     NormSelection: typeof import('./src/components/NormSelection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    ShareAuditEntry: typeof import('./src/components/ShareAuditEntry.vue')['default']
   }
 }

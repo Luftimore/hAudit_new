@@ -6,7 +6,7 @@ import icon from '../../resources/icon.png?asset'
 import * as openpgp from 'openpgp';
 
 import { ZomeCallNapi, ZomeCallSigner, ZomeCallUnsignedNapi } from '@holochain/hc-spin-rust-utils';
-import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket } from '@holochain/client';
+import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket, CellType, ActionHash, AppAgentWebsocket } from '@holochain/client';
 import { encode, decode } from '@msgpack/msgpack'
 
 import split from 'split';
@@ -14,13 +14,15 @@ import split from 'split';
 import * as childProcess from 'child_process';
 
 import { writeFileSync, readFile, existsSync, mkdir } from 'fs';
+import { Audit } from './types';
 
-let appQuitting = false;
-
-var privatePGPKey, publicPGPKey, lair_url;
+var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
+    appAgentWs, appInfo, pubKey, zomeCallUnsignedNapi, zomeCallSigner, zomeCallSignedNapi, zomeCallSigned;
 
 var adminWebsocket;
 var conductorHandle;
+
+const presetPassword = "testing";
 
 function createWindow(): void {
   // Create the browser window.
@@ -31,7 +33,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
@@ -255,7 +257,7 @@ app.whenReady().then(() => {
 
   console.log("App path: " + app.getAppPath());
 
-  handleLaunch("testing");
+  handleLaunch(presetPassword);
 
   createWindow()
 
@@ -329,41 +331,146 @@ async function handleLaunch(password: string) {
       // const installedApps = await adminWebsocket.listApps({});
       const appInterfaces = await adminWebsocket.listAppInterfaces();
       console.log('Got appInterfaces: ', appInterfaces);
-      let appPort;
+      
       if (appInterfaces.length > 0) {
         appPort = appInterfaces[0];
       } else {
-        const attachAppInterfaceResponse = await adminWebsocket.attachAppInterface({});
+        const attachAppInterfaceResponse = await adminWebsocket.attachAppInterface({ port: 1235 });
         console.log('Attached app interface port: ', attachAppInterfaceResponse);
         appPort = attachAppInterfaceResponse.port;
       }
 
       console.log("Current directory: " + __dirname);
 
-      installWebHapp("haudit");
+      await installWebHapp("haudit");
+
+      appAgentWs = await AppAgentWebsocket.connect(
+        new URL("ws://127.0.0.1:" + appPort),
+        "haudit"
+      );
+
+      zomeCallSigner = await ZomeCallSigner.connect(lair_url, password);
+
+      await createSharedAuditreport(presetPassword);
+
+      await getAllAudits(presetPassword);
     }
   });
 }
 
+async function createSharedAuditreport(password: string) {
+  var audit : Audit = {
+    title: "Auditberichtbeispiel",
+    audit_details: "Beispiel-Auditbericht"
+  }
+
+  var zomeCall : CallZomeRequest = {
+    provenance: pubKey,
+    cell_id: [installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[0], 
+      installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[1]],
+    zome_name: "audit",
+    fn_name: "create_audit",
+    payload: audit
+  }
+  
+  var zomeCallSigned = await zomeCallSignerHandler(zomeCall);
+
+  var response : ActionHash = await appAgentWs.callZome(zomeCallSigned, 30000)
+  .catch((err) => {
+    console.log("Error: " + err);
+  });
+
+  console.log("Response Action hash: " + JSON.stringify(response));
+
+      const data = JSON.parse(JSON.stringify(response));
+
+      const actionHashBuffer = data.signed_action.hashed.hash.data;
+
+      console.log("Action hash: " + actionHashBuffer);
+}
+
+async function getAllAudits(password: string) {
+
+  var zomeCall : CallZomeRequest = {
+    provenance: pubKey,
+    cell_id: [installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[0], 
+      installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[1]],
+    zome_name: "audit",
+    fn_name: "get_all_audits_content",
+    payload: null
+  }
+
+  const getAllAuditsSigned = await zomeCallSignerHandler(zomeCall);
+
+  const allPostsResponse = await appAgentWs.callZome(getAllAuditsSigned, 30000)
+  .catch((err) => {
+    console.log("Error: " + err);
+  })
+  .then((response) => {
+    const data = JSON.parse(JSON.stringify(response));
+    console.log("Response latest audits: " + JSON.stringify(response));
+    // console.log(encodeHashToBase64(response));
+
+    console.log(decode(data[0].entry.Present.entry.data));
+  });
+
+  console.log("AllAuditsResponse: " + JSON.stringify(allPostsResponse));
+}
+
 async function installWebHapp(appId: string, networkSeed?: string) {
-  const pubKey = await adminWebsocket.generateAgentPubKey();
-  const appInfo = await adminWebsocket.installApp({
+  pubKey = await adminWebsocket.generateAgentPubKey();
+  appInfo = await adminWebsocket.installApp({
     agent_key: pubKey,
     installed_app_id: appId,
     membrane_proofs: {},
     path: "./happ/haudit.happ",
     network_seed: networkSeed,
-  });
+  }).catch((error) => {
+    console.log("Error: " + error);
+  });;
   await adminWebsocket.enableApp({ installed_app_id: appId });
   console.log('Installed application hAudit...');
-  const installedApps = await adminWebsocket.listApps({});
+  installedApps = await adminWebsocket.listApps({});
   console.log('Installed apps: ', installedApps);
-  console.log(`INFO: hAudit ${appInfo}`)
+  //console.log(`INFO: hAudit ${appInfo}`)
 }
 
 async function uninstallApp(appId: string) {
   await adminWebsocket.uninstallApp({ installed_app_id: appId });
   console.log('Uninstalled app.');
-  const installedApps = await adminWebsocket.listApps({});
+  installedApps = await adminWebsocket.listApps({});
   console.log('Installed applications: ', installedApps);
+}
+
+async function zomeCallSignerHandler(request: CallZomeRequest) {
+
+  var zomeCallUnsignedNapi: ZomeCallUnsignedNapi = {
+    provenance: Array.from(request.provenance),
+    cellId: [Array.from(request.cell_id[0]), Array.from(request.cell_id[1])],
+    zomeName: request.zome_name,
+    fnName: request.fn_name,
+    payload: Array.from(encode(request.payload)),
+    nonce: Array.from(await randomNonce()),
+    expiresAt: getNonceExpiration()
+  };
+
+  var zomeCallSignedNapi: ZomeCallNapi =
+    await zomeCallSigner.signZomeCall(zomeCallUnsignedNapi);
+
+  var zomeCallSigned: CallZomeRequestSigned = {
+    provenance: Uint8Array.from(zomeCallSignedNapi.provenance),
+    cap_secret: null,
+    cell_id: [
+      Uint8Array.from(zomeCallSignedNapi.cellId[0]),
+      Uint8Array.from(zomeCallSignedNapi.cellId[1]),
+    ],
+    zome_name: zomeCallSignedNapi.zomeName,
+    fn_name: zomeCallSignedNapi.fnName,
+    payload: Uint8Array.from(zomeCallSignedNapi.payload),
+    signature: Uint8Array.from(zomeCallSignedNapi.signature),
+    expires_at: zomeCallSignedNapi.expiresAt,
+    nonce: Uint8Array.from(zomeCallSignedNapi.nonce)
+  }
+
+  return zomeCallSigned;
 }

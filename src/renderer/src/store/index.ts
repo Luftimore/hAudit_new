@@ -1,3 +1,4 @@
+import { stat } from 'fs';
 import { createStore } from 'vuex'
 
 export default createStore({
@@ -183,6 +184,11 @@ export default createStore({
         
         if (lookup !== undefined) {
             lookup.verdict = payload.verdict;
+        }
+    },
+    loadIso9001NormpointVerdicts(state, payload) {
+        if (payload !== undefined) {
+            state.auditData.iso9001data.normpoints = payload;
         }
     },
     clearIso9001NormpointVerdict(state, payload) {
