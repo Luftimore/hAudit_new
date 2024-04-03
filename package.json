@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
+  "type": "module",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
   "scripts": {
@@ -23,13 +24,19 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@holochain/client": "^0.16.10",
+    "@holochain/hc-spin-rust-utils": "^0.300.1",
+    "@trpc/server": "^10.45.2",
     "electron-updater": "^6.1.7",
+    "get-port": "^7.1.0",
     "openpgp": "^5.11.1",
     "primeflex": "^3.3.1",
     "primevue": "^3.50.0",
+    "split": "^1.0.1",
     "unplugin-vue-components": "^0.26.0",
     "vue-router": "^4.3.0",
-    "vuex": "^4.1.0"
+    "vuex": "^4.1.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

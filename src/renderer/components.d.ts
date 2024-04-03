@@ -16,5 +16,6 @@ declare module 'vue' {
     NormSelection: typeof import('./src/components/NormSelection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ShareAuditEntry: typeof import('./src/components/ShareAuditEntry.vue')['default']
   }
 }
