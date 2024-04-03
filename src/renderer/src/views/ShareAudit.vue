@@ -13,6 +13,16 @@
 
     
     <Dialog v-model:visible="shareDialogVisible" modal header="Normpunkte teilen" :style="{ width: '25rem' }">
+        <div class="flex flex-column gap-2">
+            <label for="reportname">Berichtname</label>
+            <InputText id="reportname" v-model="auditReportTitle" aria-describedby="reportname-help" />
+            <small id="reportname-help">Enter your username to reset your password.</small>
+        </div>
+        <div class="flex flex-column gap-2">
+            <label for="reportdetails">Berichtdetails</label>
+            <InputText id="reportdetails" v-model="auditReportDetails" aria-describedby="reportdetails-help" />
+            <small id="reportdetails-help">Enter your username to reset your password.</small>
+        </div>
         <span class="p-text-secondary block mb-5">Folgende Normpunkte veröffentlichen für...</span>
         <div v-for="normpoint in selectedNormpoints">
             <div v-if="normpoint.normpunkt !== ''">
@@ -25,7 +35,7 @@
         </div>
         <div class="flex justify-content-end gap-2">
             <Button type="button" label="Cancel" severity="secondary" @click="shareDialogVisible = false"></Button>
-            <Button type="button" label="Teilen" @click="shareDialogVisible = false"></Button>
+            <Button type="button" label="Teilen" @click="shareAuditReport()"></Button>
         </div>
     </Dialog>
 
@@ -40,6 +50,7 @@
     import Column from "primevue/column";
     import Dialog from "primevue/dialog";
     import Dropdown from "primevue/dropdown";
+    import InputText from "primevue/inputtext";
 
     export default {
         data() {
@@ -48,7 +59,9 @@
                 shareDialogVisible: false,
                 selectedNormpoints: [{normpunkt: "", kapitel: "", inhalt: "", verdict: ""}],
                 selectedRecipient: null,
-                recipients: []
+                recipients: [],
+                auditReportTitle: "",
+                auditReportDetails: ""
             };
         },
         mounted() {            
@@ -61,6 +74,16 @@
             window.electron.ipcRenderer.send('loadAuditForSharing');
         },
         methods: {
+            shareAuditReport() {
+                const data = {
+                    reportTitle: this.auditReportTitle,
+                    reportDetails: this.auditReportDetails,
+                    normpoints: this.selectedNormpoints,
+                    recipient: this.selectedRecipient
+                };
+
+                window.electron.ipcRenderer.send('create-shared-report-with-points-zome-call', JSON.stringify(data));
+            },
             navigateToMainMenu() {
                 this.$router.push('/');
             },

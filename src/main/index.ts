@@ -6,7 +6,7 @@ import icon from '../../resources/icon.png?asset'
 import * as openpgp from 'openpgp';
 
 import { ZomeCallNapi, ZomeCallSigner, ZomeCallUnsignedNapi } from '@holochain/hc-spin-rust-utils';
-import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket, CellType, ActionHash, AppAgentWebsocket } from '@holochain/client';
+import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket, CellType, ActionHash, AppAgentWebsocket, Record } from '@holochain/client';
 import { encode, decode } from '@msgpack/msgpack'
 
 import split from 'split';
@@ -14,7 +14,7 @@ import split from 'split';
 import * as childProcess from 'child_process';
 
 import { writeFileSync, readFile, existsSync, mkdir } from 'fs';
-import { Audit } from './types';
+import { Audit, Normpoint } from './types';
 
 var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
     appAgentWs, appInfo, pubKey, zomeCallUnsignedNapi, zomeCallSigner, zomeCallSignedNapi, zomeCallSigned;
@@ -219,42 +219,6 @@ app.whenReady().then(() => {
     }
   }
 
-  const WINDOW_INFO_MAP: Record<string, {agentPubKey; zomeCallSigner: ZomeCallSigner}> = {};
-
-  ipcMain.on('sign-zome-call', async (e: IpcMainInvokeEvent, request: CallZomeRequest) => {
-    const windowInfo = WINDOW_INFO_MAP[e.sender.id];
-
-    const zomeCallUnsignedNapi: ZomeCallUnsignedNapi = {
-      provenance: Array.from(request.provenance),
-      cellId: [Array.from(request.cell_id[0]), Array.from(request.cell_id[1])],
-      zomeName: request.zome_name,
-      fnName: request.fn_name,
-      payload: Array.from(encode(request.payload)),
-      nonce: Array.from(await randomNonce()),
-      expiresAt: getNonceExpiration()
-    };
-
-    const zomeCallSignedNapi: ZomeCallNapi =
-      await windowInfo.zomeCallSigner.signZomeCall(zomeCallUnsignedNapi);
-
-    const zomeCallSigned: CallZomeRequestSigned = {
-      provenance: Uint8Array.from(zomeCallSignedNapi.provenance),
-      cap_secret: null,
-      cell_id: [
-        Uint8Array.from(zomeCallSignedNapi.cellId[0]),
-        Uint8Array.from(zomeCallSignedNapi.cellId[1]),
-      ],
-      zome_name: zomeCallSignedNapi.zomeName,
-      fn_name: zomeCallSignedNapi.fnName,
-      payload: Uint8Array.from(zomeCallSignedNapi.payload),
-      signature: Uint8Array.from(zomeCallSignedNapi.signature),
-      expires_at: zomeCallSignedNapi.expiresAt,
-      nonce: Uint8Array.from(zomeCallSignedNapi.nonce)
-    }
-
-    return zomeCallSigned;
-  });
-
   console.log("App path: " + app.getAppPath());
 
   handleLaunch(presetPassword);
@@ -351,18 +315,81 @@ async function handleLaunch(password: string) {
 
       zomeCallSigner = await ZomeCallSigner.connect(lair_url, password);
 
-      await createSharedAuditreport(presetPassword);
+      ipcMain.on("get-all-audit-reports-zome-call", async (event) => {
+          event.reply("audit-reports-fetched-zome", await getAllAudits());
+      });
 
-      await getAllAudits(presetPassword);
+      ipcMain.on("create-shared-report-with-points-zome-call", async (event, data) => {
+        var normpoints : Normpoint[] = [];
+
+        interface NormpointsArray {
+          normpunkt: string;
+          kapitel: string;
+          inhalt: string;
+          verdict: string;
+        }
+
+        interface DataEntry {
+          reportTitle: string,
+          reportDetails: string,
+          normpoints : NormpointsArray[],
+          recipient: string
+        }
+
+        var dataCopy : DataEntry = JSON.parse(data);
+
+        console.log("dataCopy" + JSON.stringify(dataCopy));
+
+        for (const entry of dataCopy.normpoints) {
+          var normpoint : Normpoint = {
+            audit_hash: new Uint8Array,
+            normpoint_content: entry.normpunkt + " - " +
+                               entry.kapitel + " - " +
+                               // entry.inhalt + " - " + 
+                               entry.verdict
+          }
+
+          normpoints.push(normpoint);
+        }
+
+        event.reply("shared-report-created-zome", await createSharedAuditReportWithNormpoints(dataCopy.reportTitle, dataCopy.reportDetails, normpoints));
+      });
+
+      ipcMain.on("get-normpoints-for-audit-zome-call", async (event, data) => {
+        const dataParsed = JSON.parse(data);
+        // console.log(dataParsed);
+        event.reply("normpoints-for-audit-fetched-zome", await getNormpointsForAudit(dataParsed.data));
+      });
+
+      // await getAllAudits();
+      // var normpoints : Normpoint[] = [
+      //   {
+      //     normpoint_content: "Testcontent!",
+      //     audit_hash: new Uint8Array
+      //   },
+      //   {
+      //     normpoint_content: "Testcontent1!",
+      //     audit_hash: new Uint8Array
+      //   },
+      //   {
+      //     normpoint_content: "Testcontent2!",
+      //     audit_hash: new Uint8Array
+      //   },
+      // ];
+
+      // await createSharedAuditReportWithNormpoints("Test", "TestDetails", normpoints);
     }
   });
 }
 
-async function createSharedAuditreport(password: string) {
+async function createSharedAuditReportWithNormpoints(auditTitle : string, auditDetails : string, points : Normpoint[]) {
   var audit : Audit = {
-    title: "Auditberichtbeispiel",
-    audit_details: "Beispiel-Auditbericht"
+    title: auditTitle,
+    audit_details: auditDetails
   }
+
+  console.log("Audittitel " + auditTitle)
+  console.log("Auditdetails " + auditDetails)
 
   var zomeCall : CallZomeRequest = {
     provenance: pubKey,
@@ -375,21 +402,81 @@ async function createSharedAuditreport(password: string) {
   
   var zomeCallSigned = await zomeCallSignerHandler(zomeCall);
 
-  var response : ActionHash = await appAgentWs.callZome(zomeCallSigned, 30000)
+  var response : Record = await appAgentWs.callZome(zomeCallSigned, 30000)
   .catch((err) => {
-    console.log("Error: " + err);
+    console.log("Error creating Audit: " + err);
   });
 
-  console.log("Response Action hash: " + JSON.stringify(response));
-
-      const data = JSON.parse(JSON.stringify(response));
-
-      const actionHashBuffer = data.signed_action.hashed.hash.data;
-
-      console.log("Action hash: " + actionHashBuffer);
+  for (const point of points) {
+    point.audit_hash = response.signed_action.hashed.hash;
+    await createNormpoint(point);
+  }
 }
 
-async function getAllAudits(password: string) {
+async function createNormpoint(point : Normpoint) {
+  var zomeCall : CallZomeRequest = {
+    provenance: pubKey,
+    cell_id: [installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[0], 
+      installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[1]],
+    zome_name: "audit",
+    fn_name: "create_normpoint",
+    payload: point
+  }
+  
+  var zomeCallSigned = await zomeCallSignerHandler(zomeCall);
+
+  var response : Record = await appAgentWs.callZome(zomeCallSigned, 30000)
+  .catch((err) => {
+    console.log("Error creating Normpoint: " + err);
+  });
+}
+
+async function getNormpointsForAudit(hash : Uint8Array) {
+  var zomeCall : CallZomeRequest = {
+    provenance: pubKey,
+    cell_id: [installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[0], 
+      installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[1]],
+    zome_name: "audit",
+    fn_name: "get_normpoints_for_audit",
+    payload: hash
+  }
+
+  const getNormpointsSigned = await zomeCallSignerHandler(zomeCall);
+
+  const links : Record = await appAgentWs.callZome(getNormpointsSigned, 30000);
+  const data = JSON.parse(JSON.stringify(links));
+
+  var results : Normpoint[] = [];
+
+  for (const link of data) {
+    const point : Normpoint = await getNormpoint(link.target.data);
+    results.push(point);
+  }
+
+  return results;
+}
+
+async function getNormpoint(hash : Uint8Array) {
+  var zomeCall : CallZomeRequest = {
+    provenance: pubKey,
+    cell_id: [installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[0], 
+      installedApps[0].cell_info["audits"][0][CellType.Provisioned].cell_id[1]],
+    zome_name: "audit",
+    fn_name: "get_latest_normpoint",
+    payload: hash
+  }
+
+  const getNormpointSigned = await zomeCallSignerHandler(zomeCall);
+
+  const response : Record = await appAgentWs.callZome(getNormpointSigned, 30000);
+  const data = JSON.parse(JSON.stringify(response));
+
+  const point : Normpoint = decode(data.entry.Present.entry.data) as Normpoint;
+
+  return point;
+}
+
+async function getAllAudits() {
 
   var zomeCall : CallZomeRequest = {
     provenance: pubKey,
@@ -402,19 +489,28 @@ async function getAllAudits(password: string) {
 
   const getAllAuditsSigned = await zomeCallSignerHandler(zomeCall);
 
-  const allPostsResponse = await appAgentWs.callZome(getAllAuditsSigned, 30000)
-  .catch((err) => {
-    console.log("Error: " + err);
-  })
-  .then((response) => {
-    const data = JSON.parse(JSON.stringify(response));
-    console.log("Response latest audits: " + JSON.stringify(response));
-    // console.log(encodeHashToBase64(response));
+  const response : Record = await appAgentWs.callZome(getAllAuditsSigned, 30000);
+  const data = JSON.parse(JSON.stringify(response));
 
-    console.log(decode(data[0].entry.Present.entry.data));
-  });
+  // console.log(JSON.stringify(response))
 
-  console.log("AllAuditsResponse: " + JSON.stringify(allPostsResponse));
+  interface ResultItem {
+    hash: Uint8Array;
+    title: string;
+    audit_details: string;
+  }
+
+  var results : ResultItem[] = [];
+
+  for (const entry of data) {
+    const hash = entry.signed_action.hashed.hash;
+    const audit : Audit = decode(entry.entry.Present.entry.data) as Audit;
+    results.push({hash: hash, title: audit.title, audit_details: audit.audit_details});
+  }
+
+  // console.log("Results: " + JSON.stringify(results))
+
+  return results;
 }
 
 async function installWebHapp(appId: string, networkSeed?: string) {

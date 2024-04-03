@@ -7,12 +7,15 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AuditDetail: typeof import('./src/components/AuditDetail.vue')['default']
     Button: typeof import('primevue/button')['default']
     Column: typeof import('primevue/column')['default']
     CreateAudit: typeof import('./src/components/CreateAudit.vue')['default']
     DataTable: typeof import('primevue/datatable')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
+    InputText: typeof import('primevue/inputtext')['default']
+    NormpointDetails: typeof import('./src/components/NormpointDetails.vue')['default']
     NormpointSelection: typeof import('./src/components/NormpointSelection.vue')['default']
     NormSelection: typeof import('./src/components/NormSelection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
