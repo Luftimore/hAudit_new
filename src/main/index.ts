@@ -308,8 +308,8 @@ async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
 }
 
 async function handleLaunch(password: string) {
-  conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
-  //conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
+  //conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
+  conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
 
   conductorHandle.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
@@ -512,9 +512,14 @@ async function getNormpointsForAudit(hash : Uint8Array) {
     console.log("Before decrypt: " + JSON.stringify(point))
 
     // Try to decrypt normpoint content
-    // @ts-ignore
+    
+    try {
+      // @ts-ignore
     point.normpoint_content = await tryDecryptingNormpointData(point.normpoint_content);
-
+    } catch (err) {
+      point.normpoint_content = "Konnte nicht entschlüsselt werden!"
+    };
+    
     console.log("After decrypt: " + JSON.stringify(point))
 
     results.push(point);
@@ -586,8 +591,8 @@ async function installWebHapp(appId: string, networkSeed?: string) {
     agent_key: pubKey,
     installed_app_id: appId,
     membrane_proofs: {},
-    //path: process.resourcesPath + "/happ/haudit.happ",
-    path: "./happ/haudit.happ",
+    path: process.resourcesPath + "/happ/haudit.happ",
+    //path: "./happ/haudit.happ",
     network_seed: networkSeed,
   }).catch((error) => {
     console.log("Error: " + error);
@@ -597,6 +602,7 @@ async function installWebHapp(appId: string, networkSeed?: string) {
   console.log('Installed application hAudit...');
   installedApps = await adminWebsocket.listApps({});
   console.log('Installed apps: ', installedApps);
+  console.log('Installed apps cell info: ', JSON.stringify(installedApps[0].cell_info));
   //console.log(`INFO: hAudit ${appInfo}`)
 }
 
