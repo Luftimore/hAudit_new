@@ -21,6 +21,9 @@
             window.electron.ipcRenderer.on('normpoints-for-audit-fetched-zome', (event, data) => {
                 console.log(event);
                 this.normpoints = data;
+
+                // remove first dummy entry
+                this.normpoints.shift();
             });
         },
         components: {

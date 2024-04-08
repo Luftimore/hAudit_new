@@ -19,6 +19,11 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+extraResources: [
+  "./happ/haudit.happ",
+  "./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe",
+  "./out/config/conductor-config.yaml"
+]
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

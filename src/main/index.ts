@@ -1,4 +1,5 @@
-import { app, shell, BrowserWindow, ipcMain, IpcMainInvokeEvent, dialog } from 'electron'
+/* eslint-disable @typescript-eslint/no-var-requires */
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -6,7 +7,7 @@ import icon from '../../resources/icon.png?asset'
 import * as openpgp from 'openpgp';
 
 import { ZomeCallNapi, ZomeCallSigner, ZomeCallUnsignedNapi } from '@holochain/hc-spin-rust-utils';
-import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket, CellType, ActionHash, AppAgentWebsocket, Record } from '@holochain/client';
+import { randomNonce, getNonceExpiration, CallZomeRequestSigned, CallZomeRequest, AdminWebsocket, CellType, AppAgentWebsocket, Record } from '@holochain/client';
 import { encode, decode } from '@msgpack/msgpack'
 
 import split from 'split';
@@ -16,8 +17,11 @@ import * as childProcess from 'child_process';
 import { writeFileSync, readFile, existsSync, mkdir } from 'fs';
 import { Audit, Normpoint } from './types';
 
+// var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
+//    appAgentWs, appInfo, pubKey, zomeCallUnsignedNapi, zomeCallSigner, zomeCallSignedNapi, zomeCallSigned;
+
 var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
-    appAgentWs, appInfo, pubKey, zomeCallUnsignedNapi, zomeCallSigner, zomeCallSignedNapi, zomeCallSigned;
+    appAgentWs, appInfo, pubKey, zomeCallSigner;
 
 var adminWebsocket;
 var conductorHandle;
@@ -155,14 +159,14 @@ app.whenReady().then(() => {
     // ------
     (async () => {
       const { privateKey, publicKey } = await openpgp.generateKey({
-          type: 'rsa', // Type of the key
-          rsaBits: 4096, // RSA key size (defaults to 4096 bits)
-          userIDs: [{ name: 'Test', email: 'test@testing.com' }], // you can pass multiple user IDs
-          passphrase: 'testing' // protects the private key
+          type: 'rsa',
+          rsaBits: 4096,
+          userIDs: [{ name: 'Test', email: 'test@testing.com' }],
+          passphrase: 'testing'
       });
 
-      privatePGPKey = privateKey;
-      publicPGPKey = publicKey;
+      privatePGPKey = loadPrivateKey(JSON.stringify(privateKey));
+      publicPGPKey = loadPublicKey(JSON.stringify(publicKey));
 
       // Save private key to disk
       try {
@@ -194,7 +198,8 @@ app.whenReady().then(() => {
           return;
         }
 
-        privatePGPKey = JSON.parse(data);
+        loadPrivateKey(data);
+        
       });
     } catch (err) {
       if (err instanceof Error) {
@@ -210,7 +215,8 @@ app.whenReady().then(() => {
           return;
         }
 
-        publicPGPKey = JSON.parse(data);
+        loadPublicKey(data);
+
       });
     } catch (err) {
       if (err instanceof Error) {
@@ -257,8 +263,53 @@ app.on('window-all-closed', async () => {
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
 
+async function loadPublicKey(data : string) {
+  var armoredEncryptedKey = JSON.parse(data);
+
+  publicPGPKey = await openpgp.readKey({ armoredKey: armoredEncryptedKey });
+
+  console.log(publicPGPKey);
+}
+
+async function loadPrivateKey(data : string) {
+  var armoredEncryptedPKey = JSON.parse(data);
+
+  var encryptedPKey = await openpgp.readPrivateKey({ armoredKey: armoredEncryptedPKey });
+
+  privatePGPKey = await openpgp.decryptKey({
+    privateKey: encryptedPKey,
+    passphrase: "testing"
+  });
+
+  console.log(privatePGPKey);
+}
+
+async function encryptForRecipient(data : string) {
+  var encryptedData = await openpgp.encrypt({
+      message: await openpgp.createMessage({ text: data }),
+      encryptionKeys: [publicPGPKey]
+      //passwords: ["testing"]
+    });
+
+  return encryptedData;
+}
+
+async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
+  var normpointData = await openpgp.readMessage( {
+    armoredMessage: normpointDataEncrypted
+  });
+
+  var decryptedNormpointData = await openpgp.decrypt({
+    message: normpointData,
+    decryptionKeys: privatePGPKey
+  })
+
+  return decryptedNormpointData;
+}
+
 async function handleLaunch(password: string) {
   conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
+  //conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
 
   conductorHandle.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
@@ -408,7 +459,10 @@ async function createSharedAuditReportWithNormpoints(auditTitle : string, auditD
   });
 
   for (const point of points) {
+    var content = point.normpoint_content;
     point.audit_hash = response.signed_action.hashed.hash;
+    // @ts-ignore
+    point.normpoint_content = await encryptForRecipient(content);
     await createNormpoint(point);
   }
 }
@@ -429,6 +483,8 @@ async function createNormpoint(point : Normpoint) {
   .catch((err) => {
     console.log("Error creating Normpoint: " + err);
   });
+
+  console.log(response);
 }
 
 async function getNormpointsForAudit(hash : Uint8Array) {
@@ -448,8 +504,19 @@ async function getNormpointsForAudit(hash : Uint8Array) {
 
   var results : Normpoint[] = [];
 
+  console.log("Results: " + links)
+
   for (const link of data) {
     const point : Normpoint = await getNormpoint(link.target.data);
+
+    console.log("Before decrypt: " + JSON.stringify(point))
+
+    // Try to decrypt normpoint content
+    // @ts-ignore
+    point.normpoint_content = await tryDecryptingNormpointData(point.normpoint_content);
+
+    console.log("After decrypt: " + JSON.stringify(point))
+
     results.push(point);
   }
 
@@ -519,12 +586,14 @@ async function installWebHapp(appId: string, networkSeed?: string) {
     agent_key: pubKey,
     installed_app_id: appId,
     membrane_proofs: {},
+    //path: process.resourcesPath + "/happ/haudit.happ",
     path: "./happ/haudit.happ",
     network_seed: networkSeed,
   }).catch((error) => {
     console.log("Error: " + error);
   });;
   await adminWebsocket.enableApp({ installed_app_id: appId });
+  console.log(appInfo);
   console.log('Installed application hAudit...');
   installedApps = await adminWebsocket.listApps({});
   console.log('Installed apps: ', installedApps);

@@ -36,6 +36,7 @@
         },
         mounted() {
             window.electron.ipcRenderer.on("audit-reports-fetched-zome", (event, data) => {
+                console.log(event);
                 console.log("Dataview: " + data)
                 this.auditReportsData = data;
             });

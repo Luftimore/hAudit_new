@@ -16,12 +16,10 @@
         <div class="flex flex-column gap-2">
             <label for="reportname">Berichtname</label>
             <InputText id="reportname" v-model="auditReportTitle" aria-describedby="reportname-help" />
-            <small id="reportname-help">Enter your username to reset your password.</small>
         </div>
         <div class="flex flex-column gap-2">
             <label for="reportdetails">Berichtdetails</label>
             <InputText id="reportdetails" v-model="auditReportDetails" aria-describedby="reportdetails-help" />
-            <small id="reportdetails-help">Enter your username to reset your password.</small>
         </div>
         <span class="p-text-secondary block mb-5">Folgende Normpunkte veröffentlichen für...</span>
         <div v-for="normpoint in selectedNormpoints">
