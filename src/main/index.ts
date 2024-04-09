@@ -155,7 +155,7 @@ app.whenReady().then(() => {
     
 
     // Generate new PGP keypair if it doesn't exist
-    // Source: https://github.com/openpgpjs/openpgpjs/blob/main/README.md#getting-started
+    // Source: https://docs.openpgpjs.org/#generate-new-key-pair
     // ------
     (async () => {
       const { privateKey, publicKey } = await openpgp.generateKey({
@@ -271,6 +271,8 @@ app.on('window-all-closed', async () => {
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
 
+// Adapted from source: https://docs.openpgpjs.org/#encrypt-and-decrypt-string-data-with-pgp-keys
+// ------
 async function loadPublicKey(data : string) {
   var armoredEncryptedKey = JSON.parse(data);
 
@@ -278,7 +280,10 @@ async function loadPublicKey(data : string) {
 
   console.log(publicPGPKey);
 }
+// ------
 
+// Adapted from source: https://docs.openpgpjs.org/#encrypt-and-decrypt-string-data-with-pgp-keys
+// ------
 async function loadPrivateKey(data : string) {
   var armoredEncryptedPKey = JSON.parse(data);
 
@@ -291,7 +296,10 @@ async function loadPrivateKey(data : string) {
 
   console.log(privatePGPKey);
 }
+// ------
 
+// Adapted from source: https://docs.openpgpjs.org/#encrypt-and-decrypt-string-data-with-pgp-keys
+// ------
 async function encryptForRecipient(data : string, pubKey : string) {
   var armoredKey = JSON.parse(pubKey);
 
@@ -305,7 +313,10 @@ async function encryptForRecipient(data : string, pubKey : string) {
 
   return encryptedData;
 }
+// ------
 
+// Adapted from source: https://docs.openpgpjs.org/#encrypt-and-decrypt-string-data-with-pgp-keys
+// ------
 async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
   var normpointData = await openpgp.readMessage( {
     armoredMessage: normpointDataEncrypted
@@ -318,7 +329,10 @@ async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
 
   return decryptedNormpointData;
 }
+// ------
 
+// Function adapted from: https://github.com/holochain/launcher-electron/blob/35ddbab7c3f797f4d56bfca3b30f56756a6e0261/src/main/holochainManager.ts#L186
+// ------
 async function handleLaunch(password: string) {
   conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-unknown-linux-gnu", ['-c', './out/config/conductor-config.yaml', '-p']);
   //conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
@@ -450,6 +464,7 @@ async function handleLaunch(password: string) {
     }
   });
 }
+// ------
 
 async function createSharedAuditReportWithNormpoints(auditTitle : string, auditDetails : string, points : Normpoint[], contactKey : string) {
   var audit : Audit = {
@@ -485,6 +500,8 @@ async function createSharedAuditReportWithNormpoints(auditTitle : string, auditD
   }
 }
 
+// Adapted from source: https://github.com/holochain/holochain-client-js
+// ------
 async function createNormpoint(point : Normpoint) {
   var zomeCall : CallZomeRequest = {
     provenance: pubKey,
@@ -504,7 +521,10 @@ async function createNormpoint(point : Normpoint) {
 
   console.log(response);
 }
+// ------
 
+// Adapted from source: https://github.com/holochain/holochain-client-js
+// ------
 async function getNormpointsForAudit(hash : Uint8Array) {
   var zomeCall : CallZomeRequest = {
     provenance: pubKey,
@@ -545,7 +565,10 @@ async function getNormpointsForAudit(hash : Uint8Array) {
 
   return results;
 }
+// ------
 
+// Adapted from source: https://github.com/holochain/holochain-client-js
+// ------
 async function getNormpoint(hash : Uint8Array) {
   var zomeCall : CallZomeRequest = {
     provenance: pubKey,
@@ -565,7 +588,10 @@ async function getNormpoint(hash : Uint8Array) {
 
   return point;
 }
+// ------
 
+// Adapted from source: https://github.com/holochain/holochain-client-js
+// ------
 async function getAllAudits() {
 
   var zomeCall : CallZomeRequest = {
@@ -602,7 +628,10 @@ async function getAllAudits() {
 
   return results;
 }
+// ------
 
+// Source: https://github.com/holochain/launcher-electron/blob/35ddbab7c3f797f4d56bfca3b30f56756a6e0261/src/main/holochainManager.ts#L254
+// ------
 async function installWebHapp(appId: string, networkSeed?: string) {
   pubKey = await adminWebsocket.generateAgentPubKey();
   appInfo = await adminWebsocket.installApp({
@@ -623,14 +652,20 @@ async function installWebHapp(appId: string, networkSeed?: string) {
   console.log('Installed apps cell info: ', JSON.stringify(installedApps[0].cell_info));
   //console.log(`INFO: hAudit ${appInfo}`)
 }
+// ------
 
+// Source: https://github.com/holochain/launcher-electron/blob/35ddbab7c3f797f4d56bfca3b30f56756a6e0261/src/main/holochainManager.ts#L280
+// ------
 async function uninstallApp(appId: string) {
   await adminWebsocket.uninstallApp({ installed_app_id: appId });
   console.log('Uninstalled app.');
   installedApps = await adminWebsocket.listApps({});
   console.log('Installed applications: ', installedApps);
 }
+// ------
 
+// Source: https://github.com/holochain/hc-spin/blob/df50e24e4400ccea2ca49b79253ec83f9541ce36/src/main/index.ts#L121
+// ------
 async function zomeCallSignerHandler(request: CallZomeRequest) {
 
   var zomeCallUnsignedNapi: ZomeCallUnsignedNapi = {
@@ -663,3 +698,4 @@ async function zomeCallSignerHandler(request: CallZomeRequest) {
 
   return zomeCallSigned;
 }
+// ------

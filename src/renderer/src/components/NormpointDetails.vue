@@ -4,9 +4,6 @@
         <div v-for="normpoint in normpoints">
             {{ normpoint.normpoint_content }}
         </div>
-        <!-- <DataTable :value="normpoints">
-            <Column field="normpunkt" header="Normpunkt" />
-        </DataTable> -->
     </div>
 </template>
 
@@ -22,7 +19,7 @@
                 console.log(event);
                 this.normpoints = data;
 
-                // remove first dummy entry
+                // Remove first dummy entry
                 this.normpoints.shift();
             });
         },

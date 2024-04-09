@@ -182,19 +182,19 @@ export default createStore({
     setIso9001NormpointVerdict(state, payload) {
         const lookup = state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt);
         
-        if (lookup !== undefined) {
+        if (lookup !== undefined) { // Necessary because vue-tsc will not compile otherwise
             lookup.verdict = payload.verdict;
         }
     },
     loadIso9001NormpointVerdicts(state, payload) {
-        if (payload !== undefined) {
+        if (payload !== undefined) { // Necessary because vue-tsc will not compile otherwise
             state.auditData.iso9001data.normpoints = payload;
         }
     },
     clearIso9001NormpointVerdict(state, payload) {
         const lookup = state.auditData.iso9001data.normpoints.find(entry => entry.normpunkt === payload.normpunkt)
         
-        if (lookup !== undefined) {
+        if (lookup !== undefined) { // Necessary because vue-tsc will not compile otherwise
             lookup.verdict = null;
         }
     },

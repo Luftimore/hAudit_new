@@ -1,5 +1,4 @@
 <template>
-    <!-- {{normpoint}}: {{verdict}} -->
     <div class="flex flex-column">
         <div v-if="selectedNormpoint" class="flex align-items-center pr-1">
             {{ selectedNormpoint.normpunkt }}
@@ -29,8 +28,6 @@
 
     export default {
         mounted() {
-            // this.normpoints = iso9001data;
-            // console.log(this.normpoints);
             this.normpoints = this.$store.getters.getAllIso9001Normpoints;
         },
         components: {
