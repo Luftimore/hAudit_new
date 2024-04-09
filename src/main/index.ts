@@ -20,7 +20,7 @@ import { Audit, Normpoint } from './types';
 // var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
 //    appAgentWs, appInfo, pubKey, zomeCallUnsignedNapi, zomeCallSigner, zomeCallSignedNapi, zomeCallSigned;
 
-var privatePGPKey, publicPGPKey, lair_url, installedApps, appPort, 
+var privatePGPKey, publicPGPKey, publicPGPKeySharing, lair_url, installedApps, appPort, 
     appAgentWs, appInfo, pubKey, zomeCallSigner;
 
 var adminWebsocket;
@@ -178,6 +178,8 @@ app.whenReady().then(() => {
         }
       }
 
+      publicPGPKeySharing = publicKey;
+
       // Save public key to disk
       try {
         writeFileSync(app.getPath("userData") + "/pgp_keys/pgp_key.pub.json", JSON.stringify(publicKey), 'utf-8');
@@ -215,6 +217,8 @@ app.whenReady().then(() => {
           return;
         }
 
+        publicPGPKeySharing = data;
+
         loadPublicKey(data);
 
       });
@@ -226,6 +230,10 @@ app.whenReady().then(() => {
   }
 
   console.log("App path: " + app.getAppPath());
+
+  ipcMain.on("fetch-pgp-key-for-sharing", (event) => {
+    event.reply("pgp-key-for-sharing-fetched", publicPGPKeySharing);
+  });
 
   handleLaunch(presetPassword);
 
@@ -284,10 +292,14 @@ async function loadPrivateKey(data : string) {
   console.log(privatePGPKey);
 }
 
-async function encryptForRecipient(data : string) {
+async function encryptForRecipient(data : string, pubKey : string) {
+  var armoredKey = JSON.parse(pubKey);
+
+  var tempPubKey = await openpgp.readKey({ armoredKey: armoredKey });
+
   var encryptedData = await openpgp.encrypt({
       message: await openpgp.createMessage({ text: data }),
-      encryptionKeys: [publicPGPKey]
+      encryptionKeys: [tempPubKey]
       //passwords: ["testing"]
     });
 
@@ -308,8 +320,9 @@ async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
 }
 
 async function handleLaunch(password: string) {
+  conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-unknown-linux-gnu", ['-c', './out/config/conductor-config.yaml', '-p']);
   //conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
-  conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
+  //conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
 
   conductorHandle.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
@@ -380,11 +393,16 @@ async function handleLaunch(password: string) {
           verdict: string;
         }
 
+        interface Recipient {
+          name: string,
+          pubKey: string
+        }
+
         interface DataEntry {
           reportTitle: string,
           reportDetails: string,
           normpoints : NormpointsArray[],
-          recipient: string
+          recipient: Recipient
         }
 
         var dataCopy : DataEntry = JSON.parse(data);
@@ -403,7 +421,7 @@ async function handleLaunch(password: string) {
           normpoints.push(normpoint);
         }
 
-        event.reply("shared-report-created-zome", await createSharedAuditReportWithNormpoints(dataCopy.reportTitle, dataCopy.reportDetails, normpoints));
+        event.reply("shared-report-created-zome", await createSharedAuditReportWithNormpoints(dataCopy.reportTitle, dataCopy.reportDetails, normpoints, dataCopy.recipient.pubKey));
       });
 
       ipcMain.on("get-normpoints-for-audit-zome-call", async (event, data) => {
@@ -433,7 +451,7 @@ async function handleLaunch(password: string) {
   });
 }
 
-async function createSharedAuditReportWithNormpoints(auditTitle : string, auditDetails : string, points : Normpoint[]) {
+async function createSharedAuditReportWithNormpoints(auditTitle : string, auditDetails : string, points : Normpoint[], contactKey : string) {
   var audit : Audit = {
     title: auditTitle,
     audit_details: auditDetails
@@ -462,7 +480,7 @@ async function createSharedAuditReportWithNormpoints(auditTitle : string, auditD
     var content = point.normpoint_content;
     point.audit_hash = response.signed_action.hashed.hash;
     // @ts-ignore
-    point.normpoint_content = await encryptForRecipient(content);
+    point.normpoint_content = await encryptForRecipient(content, contactKey);
     await createNormpoint(point);
   }
 }
@@ -591,8 +609,8 @@ async function installWebHapp(appId: string, networkSeed?: string) {
     agent_key: pubKey,
     installed_app_id: appId,
     membrane_proofs: {},
-    path: process.resourcesPath + "/happ/haudit.happ",
-    //path: "./happ/haudit.happ",
+    //path: process.resourcesPath + "/happ/haudit.happ",
+    path: "./happ/haudit.happ",
     network_seed: networkSeed,
   }).catch((error) => {
     console.log("Error: " + error);

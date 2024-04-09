@@ -19,5 +19,6 @@ declare module 'vue' {
     NormSelection: typeof import('./src/components/NormSelection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Textarea: typeof import('primevue/textarea')['default']
   }
 }

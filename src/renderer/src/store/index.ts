@@ -175,7 +175,8 @@ export default createStore({
                 }
             ]
         }
-    }
+    },
+    publicKeys: []
   },
   mutations: {
     setIso9001NormpointVerdict(state, payload) {
@@ -201,6 +202,10 @@ export default createStore({
         state.auditData.iso9001data.normpoints.filter(entry => entry.verdict != null).forEach((entry) => {
             entry.verdict = null;
         });
+    },
+    addPublicKeyContact(state, payload) {
+        //@ts-ignore
+        state.publicKeys.push({name: payload.name, pubKey: payload.pubKey});
     }
   },
   actions: {
@@ -215,6 +220,9 @@ export default createStore({
     },
     getAllIso9001VerdictNormpoints: state => {
         return state.auditData.iso9001data.normpoints.filter(entry => entry.verdict != null)
+    },
+    getAllContacts: state => {
+        return state.publicKeys;
     }
   }
 })

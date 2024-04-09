@@ -70,6 +70,7 @@
                 this.jsonData = this.jsonData.filter(entry => entry.verdict != null)
             });
             window.electron.ipcRenderer.send('loadAuditForSharing');
+            this.recipients = this.$store.getters.getAllContacts;
         },
         methods: {
             shareAuditReport() {
