@@ -466,6 +466,8 @@ async function handleLaunch(password: string) {
 }
 // ------
 
+// Adapted from source: https://github.com/holochain/holochain-client-js
+// ------
 async function createSharedAuditReportWithNormpoints(auditTitle : string, auditDetails : string, points : Normpoint[], contactKey : string) {
   var audit : Audit = {
     title: auditTitle,
@@ -499,6 +501,7 @@ async function createSharedAuditReportWithNormpoints(auditTitle : string, auditD
     await createNormpoint(point);
   }
 }
+// ------
 
 // Adapted from source: https://github.com/holochain/holochain-client-js
 // ------
