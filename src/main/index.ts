@@ -178,7 +178,7 @@ app.whenReady().then(() => {
         }
       }
 
-      publicPGPKeySharing = publicKey;
+      publicPGPKeySharing = JSON.stringify(publicKey);
 
       // Save public key to disk
       try {
@@ -334,8 +334,8 @@ async function tryDecryptingNormpointData(normpointDataEncrypted : string) {
 // Function adapted from: https://github.com/holochain/launcher-electron/blob/35ddbab7c3f797f4d56bfca3b30f56756a6e0261/src/main/holochainManager.ts#L186
 // ------
 async function handleLaunch(password: string) {
-  conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-unknown-linux-gnu", ['-c', './out/config/conductor-config.yaml', '-p']);
-  //conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
+  //conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-unknown-linux-gnu", ['-c', './out/config/conductor-config.yaml', '-p']);
+  conductorHandle = childProcess.spawn("./out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', './out/config/conductor-config.yaml', '-p']);
   //conductorHandle = childProcess.spawn(process.resourcesPath + "/out/bins/holochain-v0.2.6-x86_64-pc-windows-msvc.exe", ['-c', process.resourcesPath + '/out/config/conductor-config.yaml', '-p']);
 
   conductorHandle.stdout.on('data', (data) => {
