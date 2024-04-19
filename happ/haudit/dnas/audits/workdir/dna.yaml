@@ -1,0 +1,21 @@
+---
+manifest_version: "1"
+name: audits
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1712105087932900
+  zomes:
+    - name: audit_integrity
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/audit_integrity.wasm"
+      dependencies: ~
+      dylib: ~
+coordinator:
+  zomes:
+    - name: audit
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/audit.wasm"
+      dependencies:
+        - name: audit_integrity
+      dylib: ~
