@@ -15,13 +15,7 @@
 
         },
         mounted() {
-            window.electron.ipcRenderer.on('normpoints-for-audit-fetched-zome', (event, data) => {
-                console.log(event);
-                this.normpoints = data;
-
-                // Remove first dummy entry
-                this.normpoints.shift();
-            });
+            
         },
         components: {
             Button
@@ -39,6 +33,15 @@
             showNormpointsData() {
                 this.showNormpoints = !this.showNormpoints;
                 if (this.showNormpoints) {
+                    window.electron.ipcRenderer.on('normpoints-for-audit-fetched-zome', (event, data) => {
+                        console.log(event);
+                        this.normpoints = data;
+
+                        // Remove first dummy entry
+                        this.normpoints.shift();
+
+                        window.electron.ipcRenderer.removeAllListeners('normpoints-for-audit-fetched-zome');
+                    });
                     window.electron.ipcRenderer.send('get-normpoints-for-audit-zome-call', JSON.stringify(this.auditHash));
                 }
             }
